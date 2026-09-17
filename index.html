@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Downloader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #2d1f1f 0%, #0a0a0a 50%, #2d1f1f 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+            z-index: 100;
+        }
+
+        .settings-btn:hover {
+            transform: scale(1.05);
+            color: #fbbf24;
+        }
+
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 300px;
+            height: 100vh;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
+            transition: right 0.3s ease;
+            z-index: 99;
+            padding: 80px 20px 20px;
+            overflow-y: auto;
+        }
+
+        .settings-panel.show {
+            right: 0;
+        }
+
+        .settings-header {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+
+        .settings-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            color: #fbbf24;
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .quality-display {
+            background: #222;
+            padding: 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            border: 1px solid #333;
+        }
+
+        .quality-display:hover {
+            background: #2a2a2a;
+        }
+
+        .quality-display span {
+            color: #fff;
+            font-size: 15px;
+        }
+
+        .quality-dropdown {
+            background: #222;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+            margin-bottom: 10px;
+            border: 1px solid #333;
+        }
+
+        .quality-dropdown.show {
+            display: block;
+        }
+
+        .quality-option {
+            padding: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #333;
+        }
+
+        .quality-option:last-child {
+            border-bottom: none;
+        }
+
+        .quality-option:hover {
+            background: #2a2a2a;
+        }
+
+        .quality-option.active {
+            background: #333;
+        }
+
+        .quality-option span {
+            color: #fff;
+            font-size: 15px;
+        }
+
+        .check-icon {
+            color: #fbbf24;
+            font-size: 18px;
+            display: none;
+        }
+
+        .quality-option.active .check-icon {
+            display: block;
+        }
+
+        .video-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .video-item {
+            background: #222;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #333;
+        }
+
+        .video-item:hover {
+            background: #2a2a2a;
+        }
+
+        .video-icon {
+            font-size: 20px;
+        }
+
+        .video-name {
+            color: #fff;
+            font-size: 13px;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .empty-msg {
+            color: #666;
+            font-size: 13px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            z-index: 98;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
+        .infinity-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 50px;
+        }
+
+        .infinity-wrapper {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s;
+            width: 220px;
+            height: 220px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .infinity-wrapper:hover {
+            transform: scale(1.05);
+        }
+
+        .infinity-hole {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: #0a0a0a;
+            border: 2px solid #222;
+            overflow: hidden;
+        }
+
+        .light-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 0deg,
+                transparent 0deg,
+                transparent 360deg
+            );
+            transition: background 0.3s;
+        }
+
+        .light-ring.spinning {
+            animation: spin 0.3s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .infinity-logo {
+            position: relative;
+            font-size: 120px;
+            font-weight: bold;
+            color: #444;
+            z-index: 10;
+            user-select: none;
+            transition: color 0.3s;
+        }
+
+        .infinity-logo.has-url {
+            color: #fbbf24;
+        }
+
+        .light-ring.active {
+            background: conic-gradient(
+                from 0deg,
+                transparent 0deg,
+                transparent 180deg,
+                rgba(251, 191, 36, 0.6) 200deg,
+                rgba(251, 191, 36, 0.9) 220deg,
+                rgba(251, 191, 36, 0.6) 240deg,
+                transparent 260deg,
+                transparent 360deg
+            );
+        }
+
+        .light-ring.active.has-url {
+            background: conic-gradient(
+                from 0deg,
+                transparent 0deg,
+                transparent 180deg,
+                rgba(251, 191, 36, 0.6) 200deg,
+                rgba(251, 191, 36, 0.9) 220deg,
+                rgba(251, 191, 36, 0.6) 240deg,
+                transparent 260deg,
+                transparent 360deg
+            );
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            display: none;
+            font-size: 15px;
+            background: #222;
+            color: #fff;
+            border: 1px solid #333;
+        }
+
+        .status.success {
+            display: block;
+        }
+
+        .status.error {
+            display: block;
+        }
+
+        .status.info {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 200px;
+            height: 8px;
+            background: #222;
+            border-radius: 6px;
+            margin-top: 20px;
+            overflow: hidden;
+            display: none;
+            border: 1px solid #333;
+        }
+
+        .progress-bar.show {
+            display: block;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fbbf24 0%, #fff 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
+
+    <div class="overlay" id="overlay" onclick="toggleSettings()"></div>
+
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">⚙️ Settings</div>
+        
+        <div class="settings-section">
+            <div class="section-title">Video Quality</div>
+            
+            <div class="quality-display" onclick="toggleQualityDropdown()">
+                <span id="currentQuality">Best Quality (Auto)</span>
+                <span>▼</span>
+            </div>
+            
+            <div class="quality-dropdown" id="qualityDropdown">
+                <div class="quality-option" onclick="selectQuality('best')" id="quality-best">
+                    <span>Best Quality (Auto)</span>
+                    <span class="check-icon">✓</span>
+                </div>
+                
+                <div class="quality-option" onclick="selectQuality('1080')" id="quality-1080">
+                    <span>1080p Full HD</span>
+                    <span class="check-icon">✓</span>
+                </div>
+                
+                <div class="quality-option" onclick="selectQuality('720')" id="quality-720">
+                    <span>720p HD</span>
+                    <span class="check-icon">✓</span>
+                </div>
+                
+                <div class="quality-option" onclick="selectQuality('480')" id="quality-480">
+                    <span>480p</span>
+                    <span class="check-icon">✓</span>
+                </div>
+                
+                <div class="quality-option" onclick="selectQuality('360')" id="quality-360">
+                    <span>360p</span>
+                    <span class="check-icon">✓</span>
+                </div>
+                
+                <div class="quality-option" onclick="selectQuality('audio')" id="quality-audio">
+                    <span>Audio Only (MP3)</span>
+                    <span class="check-icon">✓</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <div class="section-title">Downloaded Videos</div>
+            
+            <div class="video-list" id="videoList">
+                <div class="empty-msg">No videos downloaded yet</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="infinity-container">
+            <div class="infinity-wrapper" onclick="pasteUrl()">
+                <div class="infinity-hole">
+                    <div class="light-ring" id="lightRing"></div>
+                </div>
+                <div class="infinity-logo" id="infinityLogo">∞</div>
+            </div>
+
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentQuality = 'best';
+        let downloadedVideos = [];
+        let hiddenUrl = '';
+        const COBALT_APIS = ['https://api.cobalt.tools', 'https://co.wuk.sh'];
+        let currentApiIndex = 0;
+
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            const overlay = document.getElementById('overlay');
+            panel.classList.toggle('show');
+            overlay.classList.toggle('show');
+            updateVideoList();
+        }
+
+        function toggleQualityDropdown() {
+            const dropdown = document.getElementById('qualityDropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        function selectQuality(quality) {
+            currentQuality = quality;
+            
+            const qualityNames = {
+                'best': 'Best Quality (Auto)',
+                '1080': '1080p Full HD',
+                '720': '720p HD',
+                '480': '480p',
+                '360': '360p',
+                'audio': 'Audio Only (MP3)'
+            };
+            
+            document.getElementById('currentQuality').textContent = qualityNames[quality];
+            
+            document.querySelectorAll('.quality-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            
+            document.getElementById('quality-' + quality).classList.add('active');
+            
+            document.getElementById('qualityDropdown').classList.remove('show');
+        }
+
+        function pasteUrl() {
+            const logo = document.getElementById('infinityLogo');
+            const lightRing = document.getElementById('lightRing');
+            
+            navigator.clipboard.readText().then(text => {
+                if (text && text.trim()) {
+                    hiddenUrl = text.trim();
+                    logo.classList.add('has-url');
+                    lightRing.classList.add('active');
+                    lightRing.classList.add('spinning');
+                    downloadVideo();
+                }
+            }).catch(err => {
+                console.log('Clipboard access denied');
+            });
+        }
+
+        function addVideoToList(url, quality) {
+            const video = {
+                id: Date.now(),
+                url: url,
+                quality: quality,
+                date: new Date().toLocaleString()
+            };
+            
+            downloadedVideos.unshift(video);
+            
+            if (downloadedVideos.length > 50) {
+                downloadedVideos.pop();
+            }
+            
+            localStorage.setItem('downloadedVideos', JSON.stringify(downloadedVideos));
+        }
+
+        function updateVideoList() {
+            const videoList = document.getElementById('videoList');
+            
+            if (downloadedVideos.length === 0) {
+                videoList.innerHTML = '<div class="empty-msg">No videos downloaded yet</div>';
+                return;
+            }
+            
+            videoList.innerHTML = downloadedVideos.map(video => `
+                <div class="video-item" onclick="window.open('${video.url}', '_blank')">
+                    <span class="video-icon">🎬</span>
+                    <span class="video-name">${video.url}</span>
+                    <span style="color: #888; font-size: 11px;">${video.quality}</span>
+                </div>
+            `).join('');
+        }
+
+        selectQuality('best');
+
+        async function downloadVideo() {
+            const statusDiv = document.getElementById('status');
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            const logo = document.getElementById('infinityLogo');
+            const lightRing = document.getElementById('lightRing');
+            
+            if (!hiddenUrl) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Click ∞ to paste URL first!';
+                return;
+            }
+
+            progressBar.classList.add('show');
+            progressFill.style.width = '20%';
+
+            try {
+                let downloadUrl = null;
+
+                for (let i = currentApiIndex; i < COBALT_APIS.length; i++) {
+                    try {
+                        const response = await fetch(`${COBALT_APIS[i]}/api/json`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+                            body: JSON.stringify({
+                                url: hiddenUrl,
+                                vQuality: currentQuality === 'audio' ? 'max' : currentQuality,
+                                isAudioOnly: currentQuality === 'audio',
+                                filenamePattern: 'basic',
+                                disableMetadata: false
+                            })
+                        });
+
+                        if (!response.ok) continue;
+
+                        const data = await response.json();
+
+                        if (data.status === 'ok' && data.url) {
+                            downloadUrl = data.url;
+                            currentApiIndex = i;
+                            break;
+                        }
+                    } catch (e) {
+                        continue;
+                    }
+                }
+
+                if (!downloadUrl) {
+                    throw new Error('Download failed. Please try again.');
+                }
+
+                progressFill.style.width = '80%';
+
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = 'video_' + Date.now() + '.mp4';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                progressFill.style.width = '100%';
+
+                addVideoToList(hiddenUrl, currentQuality);
+
+                statusDiv.className = 'status success';
+                statusDiv.textContent = '✅ Download started!';
+
+                setTimeout(() => {
+                    progressBar.classList.remove('show');
+                    statusDiv.className = 'status';
+                    statusDiv.style.display = 'none';
+                    
+                    hiddenUrl = '';
+                    logo.classList.remove('has-url');
+                    lightRing.classList.remove('active');
+                    lightRing.classList.remove('spinning');
+                }, 2000);
+
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ ' + error.message;
+                progressBar.classList.remove('show');
+            }
+        }
+    </script>
+</body>
+      </html>
